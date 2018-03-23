@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -34,10 +35,15 @@ func main() {
 	GOROOT = os.Getenv("GOROOT")
 
 	//goExePath := goroot+string(os.PathSeparator)+"bin"+string(os.PathSeparator)+"go.exe"
+	var goListCmd *exec.Cmd
 	os.Chdir(fullPathToPackage(packageSrc))
-	goListCmd := exec.Command("cmd", "/C", "go", "list", "-f", `"{{join .Deps "\n"}}"`)
+	if runtime.GOOS == "windows" {
+		goListCmd = exec.Command("cmd", "/C", "go", "list", "-f", `"{{join .Deps "\n"}}"`)
+	} else if runtime.GOOS == "linux" {
+		goListCmd = exec.Command("/bin/bash", "-c", "go", "list", "-f", `"{{join .Deps "\n"}}"`)
+	}
 	listBytes, cmd_err := goListCmd.CombinedOutput()
-	fmt.Println(string(listBytes))
+	//fmt.Println(string(listBytes))
 	if cmd_err != nil {
 		panic(cmd_err)
 	}
