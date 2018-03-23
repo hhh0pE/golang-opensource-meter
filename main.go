@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/c2h5oh/datasize"
 )
 
 var GOPATH string
@@ -30,9 +32,14 @@ func main() {
 		panic("cannot get package src from args")
 	}
 
-	fmt.Println(packageSrc)
+	fmt.Println("Analyzing ", packageSrc, "...")
 	GOPATH = os.Getenv("GOPATH")
 	GOROOT = os.Getenv("GOROOT")
+
+	if _, err := os.Stat(fullPathToPackage(packageSrc)); os.IsNotExist(err) {
+		fmt.Println("cannot find specified package")
+		os.Exit(1)
+	}
 
 	//goExePath := goroot+string(os.PathSeparator)+"bin"+string(os.PathSeparator)+"go.exe"
 	var goListCmd *exec.Cmd
@@ -78,9 +85,9 @@ func main() {
 	var totalSize = openSourceSize + restSize + stdLibSize
 
 	//fmt.Println(openSourceSize, restSize)
-	fmt.Println("StdLib %", (float64(stdLibSize)/float64(totalSize))*100)
-	fmt.Println("OpenSource %", (float64(openSourceSize)/float64(totalSize))*100)
-	fmt.Println("Own code %", (float64(restSize)/float64(totalSize))*100)
+	fmt.Printf("StdLib %.2f%% (%s)\n", (float64(stdLibSize)/float64(totalSize))*100, datasize.ByteSize(float64(stdLibSize)/1024).HumanReadable())
+	fmt.Printf("OpenSource %.2f%% (%s)\n", (float64(openSourceSize)/float64(totalSize))*100, datasize.ByteSize(float64(openSourceSize)/1024).HumanReadable())
+	fmt.Printf("Own code %.2f%% (%s)\n", (float64(restSize)/float64(totalSize))*100, datasize.ByteSize(float64(restSize)/1024).HumanReadable())
 
 	//fmt.Println(pkgSizeMap)
 
@@ -137,6 +144,13 @@ func isPkgOpensource(pkg string) bool {
 	return false
 }
 
+// Lib package if:
+// 1. Has only 1 part of src, like: fmt, log, os, strings
+// 2. Has not dots on first part, like: os/exec, path/filepath
+//
+// But there are not lib packages:
+// github.com/X/Y
+// somesite.org/someuser/somepkg
 func isLibPkg(pkg string) bool {
 	if parts := strings.Split(pkg, "/"); len(parts) > 1 {
 		if foundDotIndex := strings.Index(parts[0], "."); foundDotIndex == -1 {
