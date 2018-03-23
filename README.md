@@ -11,5 +11,7 @@ golang-opensource-meter.exe -package=github.com/hhh0pE/golang-opensource-meter
 
 Will display:
 StdLib 100%
+OpenSource 0%
+OwnCode 0%
 
 On other, more big packages normal % of own code is about 5-10%.
